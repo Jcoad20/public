@@ -1,0 +1,1989 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>心率多设备对比分析系统</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.min.js">
+    </script>
+    <style>
+        :root {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-accent: #0f3460;
+            --text-primary: #f8f9fa;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --accent-cyan: #00d4ff;
+            --accent-red: #ff4757;
+            --accent-green: #2ed573;
+            --accent-orange: #ffa502;
+            --accent-purple: #a55eea;
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-hover: rgba(255, 255, 255, 0.12);
+            --btn-blue: rgba(0, 123, 255, 0.2);
+            --btn-blue-hover: rgba(0, 123, 255, 0.4);
+            --btn-gray: rgba(108, 117, 125, 0.2);
+            --btn-gray-hover: rgba(108, 117, 125, 0.4);
+            --btn-green: rgba(40, 167, 69, 0.2);
+            --btn-green-hover: rgba(40, 167, 69, 0.4);
+            --btn-orange: rgba(253, 126, 20, 0.2);
+            --btn-orange-hover: rgba(253, 126, 20, 0.4);
+            --btn-red: rgba(220, 53, 69, 0.2);
+            --btn-red-hover: rgba(220, 53, 69, 0.4);
+            --radius-sm: 8px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.15);
+            --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.18);
+            --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.22);
+            --transition-fast: 0.2s ease;
+            --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-accent) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            padding-top: 80px;
+            animation: fadeIn 0.8s ease-out;
+            line-height: 1.6;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.02);
+            }
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes dropdownIn {
+            from {
+                opacity: 0;
+                transform: translateY(-8px) scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* 导航栏 */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 0.8rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background var(--transition-normal);
+        }
+        .navbar:hover {
+            background: var(--glass-hover);
+        }
+        .navbar-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 600;
+            color: #fff;
+            user-select: none;
+        }
+        .navbar-logo span {
+            color: var(--accent-cyan);
+        }
+        .navbar-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+        .navbar-links a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all var(--transition-normal);
+            padding: 0.5rem 0;
+            border-bottom: 2px solid transparent;
+            font-size: 15px;
+        }
+        .navbar-links a:hover,
+        .navbar-links a:focus-visible {
+            color: #fff;
+            border-bottom-color: var(--accent-cyan);
+            outline: none;
+        }
+
+        /* 容器 */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 20px 40px;
+        }
+        .page-title {
+            text-align: center;
+            margin: 2rem 0;
+            font-size: 32px;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            letter-spacing: 0.5px;
+        }
+
+        /* 介绍面板（可折叠） */
+        .intro-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-md);
+            animation: slideUp 0.6s ease-out;
+            overflow: hidden;
+        }
+        .intro-header {
+            padding: 1.5rem 2rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            transition: background var(--transition-fast);
+        }
+        .intro-header:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .intro-header h2 {
+            color: var(--accent-cyan);
+            font-size: 22px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .intro-arrow {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.8);
+            transition: transform var(--transition-normal);
+            display: inline-block;
+        }
+        .intro-panel.open .intro-arrow {
+            transform: rotate(180deg);
+        }
+        .intro-content {
+            padding: 0 2rem 1.5rem;
+            display: none;
+        }
+        .intro-panel.open .intro-content {
+            display: block;
+        }
+        .intro-content p {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 1.5rem;
+        }
+        .intro-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+        .intro-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.2rem;
+            border-radius: 12px;
+            border-left: 3px solid var(--accent-cyan);
+            transition: all var(--transition-normal);
+        }
+        .intro-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 16px rgba(0, 212, 255, 0.2);
+        }
+        .intro-card h3 {
+            margin-bottom: 0.5rem;
+            font-size: 16px;
+            color: #fff;
+        }
+        .intro-card p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 0;
+        }
+
+        /* 核心面板 */
+        .panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-md);
+            transition: all var(--transition-normal);
+            animation: slideUp 0.6s ease-out;	
+        }
+        .panel:hover {
+            background: var(--glass-hover);
+            box-shadow: var(--shadow-lg);
+        }
+        .panel h3 {
+            margin-bottom: 16px;
+            color: #fff;
+            font-size: 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 8px;
+            letter-spacing: 0.3px;
+        }
+
+        /* 按钮组 */
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: var(--radius-md);
+            background: var(--btn-blue);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+            position: relative;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 123, 255, 0.3);
+            background: var(--btn-blue-hover);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button:focus-visible {
+            outline: 2px solid var(--accent-cyan);
+            outline-offset: 2px;
+        }
+        button.gray {
+            background: var(--btn-gray);
+        }
+        button.gray:hover {
+            background: var(--btn-gray-hover);
+            box-shadow: 0 4px 16px rgba(108, 117, 125, 0.3);
+        }
+        button.green {
+            background: var(--btn-green);
+        }
+        button.green:hover {
+            background: var(--btn-green-hover);
+            box-shadow: 0 4px 16px rgba(40, 167, 69, 0.3);
+        }
+        button.orange {
+            background: var(--btn-orange);
+        }
+        button.orange:hover {
+            background: var(--btn-orange-hover);
+            box-shadow: 0 4px 16px rgba(253, 126, 20, 0.3);
+        }
+        button.red {
+            background: var(--btn-red);
+        }
+        button.red:hover {
+            background: var(--btn-red-hover);
+            box-shadow: 0 4px 16px rgba(220, 53, 69, 0.3);
+        }
+
+        /* 下拉菜单容器 */
+        .dropdown-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            border: none;
+            border-radius: var(--radius-md);
+            background: var(--btn-orange);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .dropdown-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(253, 126, 20, 0.35);
+            background: var(--btn-orange-hover);
+        }
+        .dropdown-toggle:active {
+            transform: translateY(0);
+        }
+        .dropdown-toggle:focus-visible {
+            outline: 2px solid var(--accent-cyan);
+            outline-offset: 2px;
+        }
+        .dropdown-toggle .arrow {
+            display: inline-block;
+            transition: transform var(--transition-fast);
+            font-size: 11px;
+            margin-left: 2px;
+        }
+        .dropdown-wrapper.open .dropdown-toggle .arrow {
+            transform: rotate(180deg);
+        }
+
+        /* 下拉菜单 */
+        .dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            min-width: 220px;
+            background: rgba(30, 30, 60, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+            padding: 8px 0;
+            z-index: 1100;
+            display: none;
+            animation: dropdownIn 0.2s ease-out;
+            list-style: none;
+        }
+        .dropdown-wrapper.open .dropdown-menu {
+            display: block;
+        }
+        .dropdown-menu li {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .dropdown-menu .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 11px 18px;
+            border: none;
+            background: transparent;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            text-align: left;
+            white-space: nowrap;
+            border-radius: 0;
+            letter-spacing: 0.3px;
+            font-weight: 400;
+        }
+        .dropdown-menu .dropdown-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: none;
+            box-shadow: none;
+        }
+        .dropdown-menu .dropdown-item:active {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        .dropdown-menu .dropdown-item:focus-visible {
+            outline: 2px solid var(--accent-cyan);
+            outline-offset: -2px;
+        }
+        .dropdown-menu .dropdown-item .item-icon {
+            font-size: 16px;
+            width: 22px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .dropdown-menu .dropdown-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.12);
+            margin: 6px 12px;
+            pointer-events: none;
+        }
+        .dropdown-menu .dropdown-section-label {
+            padding: 8px 18px 4px;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.45);
+            letter-spacing: 1.5px;
+            font-weight: 600;
+            pointer-events: none;
+        }
+        .dropdown-menu .dropdown-item.disabled {
+            opacity: 0.45;
+            pointer-events: none;
+            cursor: not-allowed;
+        }
+
+        /* 实时心率显示 */
+        .realtime-hr {
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--accent-red);
+            text-align: center;
+            padding: 20px 0;
+            border-radius: 12px;
+            background: rgba(255, 71, 87, 0.1);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            margin: 16px 0;
+            animation: pulse 2s infinite;
+            letter-spacing: 1px;
+        }
+        .realtime-hr span {
+            font-size: 16px;
+            color: var(--text-secondary);
+            font-weight: normal;
+            margin-left: 10px;
+            letter-spacing: 0;
+        }
+        .device-list {
+            margin: 10px 0;
+        }
+        .device-item {
+            display: none;
+        }
+
+        /* 主设备选择 */
+        .main-device-select {
+            margin: 10px 0;
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+            transition: border-color var(--transition-fast);
+        }
+        .main-device-select:focus-visible {
+            outline: 2px solid var(--accent-cyan);
+            outline-offset: 2px;
+        }
+        .main-device-select option {
+            background: #16213e;
+            color: #fff;
+        }
+
+        /* 统计+报警容器 */
+        .stats-alarm-wrapper {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        .stats-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all var(--transition-normal);
+        }
+        .stats-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+        .stats-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--accent-cyan);
+            font-size: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .rename-btn {
+            font-size: 12px;
+            padding: 4px 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            color: #fff;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        .rename-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: none;
+            box-shadow: none;
+        }
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            padding: 4px 0;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* 报警容器 */
+        .alarm-container {
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            transition: all var(--transition-normal);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .alarm-normal {
+            background: rgba(40, 167, 69, 0.15);
+            border: 2px solid rgba(40, 167, 69, 0.6);
+        }
+        .alarm-bradycardia {
+            background: rgba(255, 193, 7, 0.15);
+            border: 2px solid rgba(255, 193, 7, 0.6);
+        }
+        .alarm-tachycardia {
+            background: rgba(220, 53, 69, 0.15);
+            border: 2px solid rgba(220, 53, 69, 0.6);
+            animation: pulse 1s infinite;
+        }
+        .alarm-level {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .alarm-normal .alarm-level {
+            color: #28a745;
+        }
+        .alarm-bradycardia .alarm-level {
+            color: #ffc107;
+        }
+        .alarm-tachycardia .alarm-level {
+            color: #dc3545;
+        }
+        .alarm-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        .alarm-hr {
+            font-size: 28px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        /* 图表容器 */
+        .charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        .chart-box {
+            width: 100%;
+            height: 400px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* 报告样式 */
+        .report {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            line-height: 1.8;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .report h3 {
+            color: var(--accent-red);
+            margin-bottom: 16px;
+            font-size: 20px;
+            border-bottom: 1px solid rgba(255, 71, 87, 0.3);
+            padding-bottom: 8px;
+        }
+        .report h4 {
+            color: var(--accent-cyan);
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .report p {
+            margin: 6px 0;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .report .item {
+            margin: 10px 0;
+        }
+        .report .zone {
+            margin: 8px 0;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* 反馈浮动按钮 */
+        .feedback-float {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 999;
+            border-radius: 50px;
+            padding: 12px 24px;
+            background: rgba(0, 212, 255, 0.2);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(0, 212, 255, 0.4);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            box-shadow: 0 4px 16px rgba(0, 212, 255, 0.2);
+            letter-spacing: 0.3px;
+        }
+        .feedback-float:hover {
+            transform: translateY(-3px);
+            background: rgba(0, 212, 255, 0.4);
+            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.3);
+        }
+        .feedback-float:focus-visible {
+            outline: 2px solid var(--accent-cyan);
+            outline-offset: 3px;
+        }
+
+        /* 反馈模态框 */
+        .feedback-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            animation: fadeIn 0.3s ease;
+        }
+        .feedback-modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px;
+            animation: slideUp 0.4s ease;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .modal-header h3 {
+            color: var(--accent-cyan);
+            font-size: 20px;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 24px;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            padding: 4px 8px;
+            border-radius: 50%;
+        }
+        .modal-close:hover {
+            color: #fff;
+            transform: rotate(90deg);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: none;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 14px;
+            transition: all var(--transition-normal);
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            background: var(--glass-hover);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.2);
+        }
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        /* 响应式适配 */
+        @media(max-width:900px) {
+            .navbar {
+                padding: 0.8rem 1rem;
+            }
+            .navbar-links {
+                gap: 1rem;
+            }
+            .charts {
+                grid-template-columns: 1fr;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .stats-alarm-wrapper {
+                grid-template-columns: 1fr;
+            }
+            .intro-grid {
+                grid-template-columns: 1fr;
+            }
+            button {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+            .dropdown-toggle {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+            .dropdown-menu {
+                min-width: 200px;
+                left: auto;
+                right: 0;
+            }
+            .realtime-hr {
+                font-size: 28px;
+            }
+            .page-title {
+                font-size: 26px;
+            }
+            .chart-box {
+                height: 320px;
+            }
+            .intro-header {
+                padding: 1rem 1.5rem;
+            }
+            .intro-content {
+                padding: 0 1.5rem 1.5rem;
+            }
+        }
+        @media(max-width:480px) {
+            .btn-group {
+                gap: 6px;
+            }
+            .alarm-hr {
+                font-size: 22px;
+            }
+            .navbar-links {
+                display: none;
+            }
+            .feedback-float {
+                bottom: 1rem;
+                right: 1rem;
+                padding: 10px 16px;
+                font-size: 13px;
+            }
+            .dropdown-menu {
+                min-width: 180px;
+                right: -10px;
+            }
+            .dropdown-menu .dropdown-item {
+                padding: 10px 14px;
+                font-size: 13px;
+            }
+            .page-title {
+                font-size: 22px;
+            }
+            .chart-box {
+                height: 260px;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .intro-header h2 {
+                font-size: 18px;
+            }
+        }
+
+        #printArea {
+            display: none;
+        }
+        @media print {
+            body * {
+                display: none;
+            }
+            #printArea {
+                display: block !important;
+                color: #000;
+                background: #fff;
+                padding: 20px;
+            }
+            #printArea * {
+                color: #000 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar" role="navigation" aria-label="主导航">
+        <div class="navbar-logo">
+            <span>❤️</span> 心率<span>多设备</span>分析系统
+        </div>
+        <ul class="navbar-links">
+            <li><a href="#monitor">实时监测</a></li>
+            <li><a href="#charts">数据图表</a></li>
+            <li><a href="#report">分析报告</a></li>
+            <li><a href="#introPanel">使用帮助</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h1 class="page-title">心率多设备对比分析系统</h1>
+
+        <!-- 系统介绍面板（可折叠） -->
+        <div class="intro-panel" id="introPanel">
+            <div class="intro-header" id="introHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="introContent">
+                <h2>📋 系统介绍</h2>
+                <span class="intro-arrow" id="introArrow">▼</span>
+            </div>
+            <div class="intro-content" id="introContent">
+                <p>本系统支持同时连接多台蓝牙心率设备，实时对比不同设备的测量精度，提供专业的心率数据分析和健康评估。采用医疗级标准设计，适用于家庭健康监测、运动训练和设备对比测试。</p>
+                <div class="intro-grid">
+                    <div class="intro-card">
+                        <h3>🔵 多设备同时连接</h3>
+                        <p>支持同时连接最多4台蓝牙心率设备，实时同步数据，自动计算设备间误差</p>
+                    </div>
+                    <div class="intro-card">
+                        <h3>🟢 三级智能报警</h3>
+                        <p>正常/心动过缓/心动过速三级报警，配合音频反馈，异常情况及时提醒</p>
+                    </div>
+                    <div class="intro-card">
+                        <h3>🟠 专业数据分析</h3>
+                        <p>自动计算均值、标准差、心率变异性(HRV)，生成专业健康评估报告</p>
+                    </div>
+                    <div class="intro-card">
+                        <h3>🔴 数据永久保存</h3>
+                        <p>支持数据导出为Excel、JSON格式，可回放历史数据，生成打印报表</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 核心功能面板 -->
+        <div class="panel" id="monitor">
+            <div class="btn-group">
+                <button id="scan">🔍 扫描蓝牙心率设备</button>
+                <button id="disconnect" class="gray">🔌 断开所有</button>
+                <button id="clear" class="gray">🗑️ 清空数据</button>
+
+                <!-- 数据操作下拉菜单 -->
+                <div class="dropdown-wrapper" id="dataDropdown">
+                    <button class="dropdown-toggle" id="dropdownToggleBtn" aria-haspopup="true" aria-expanded="false">
+                        📊 数据操作 <span class="arrow">▼</span>
+                    </button>
+                    <ul class="dropdown-menu" id="dropdownMenu" role="menu" aria-label="数据操作菜单">
+                        <li role="none"><button class="dropdown-item" role="menuitem" data-action="save"><span class="item-icon">💾</span> 保存数据</button></li>
+                        <li role="none"><button class="dropdown-item" role="menuitem" data-action="load"><span class="item-icon">📂</span> 加载回放</button></li>
+                        <li role="none"><button class="dropdown-item" role="menuitem" data-action="export"><span class="item-icon">📥</span> 导出 Excel</button></li>
+                        <li role="none"><button class="dropdown-item" role="menuitem" data-action="print"><span class="item-icon">🖨️</span> 打印报表</button></li>
+                        <li role="none"><button class="dropdown-item" role="menuitem" data-action="analyse"><span class="item-icon">📈</span> 分析数据</button></li>
+                        <li role="separator" class="dropdown-divider"></li>
+                        <li role="none"><span class="dropdown-section-label">回放控制</span></li>
+                        <li role="none"><button class="dropdown-item" role="menuitem" data-action="play" id="dropdownPlay"><span class="item-icon">▶️</span> 开始回放</button></li>
+                        <li role="none"><button class="dropdown-item" role="menuitem" data-action="pause" id="dropdownPause"><span class="item-icon">⏸️</span> 暂停回放</button></li>
+                        <li role="none"><button class="dropdown-item" role="menuitem" data-action="stopPlay" id="dropdownStopPlay"><span class="item-icon">⏹️</span> 停止回放</button></li>
+                    </ul>
+                </div>
+
+                <button id="audioToggle" class="green">🔊 关闭音频反馈</button>
+            </div>
+
+            <div id="deviceList" class="device-list">未连接设备</div>
+            <div id="mainDeviceContainer" style="display: none;">
+                <label for="mainDeviceSelect">主设备（报警基准）：</label>
+                <select id="mainDeviceSelect" class="main-device-select" aria-label="选择主设备作为报警基准"></select>
+            </div>
+
+            <div class="stats-alarm-wrapper">
+                <div class="stats-grid" id="statsContainer"></div>
+                <div class="alarm-container" id="alarmContainer">
+                    <div class="alarm-level" id="alarmLevel">未监测</div>
+                    <div class="alarm-desc" id="alarmDesc">请连接设备开始监测</div>
+                    <div class="alarm-hr" id="alarmHr">-- BPM</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 图表区域 -->
+        <div class="charts" id="charts">
+            <div class="panel chart-box">
+                <h3>实时心率曲线</h3>
+                <canvas id="chartRealTime" aria-label="实时心率曲线图" role="img"></canvas>
+            </div>
+            <div class="panel chart-box">
+                <h3>心率区间分布</h3>
+                <canvas id="chartHeartRateStats" aria-label="心率区间分布饼图" role="img"></canvas>
+            </div>
+        </div>
+
+        <!-- 报告区域 -->
+        <div id="reportArea" class="panel" id="report"></div>
+    </div>
+
+    <!-- 反馈浮动按钮 -->
+    <button class="feedback-float" id="feedbackBtn" aria-label="打开问题反馈表单">💬 问题反馈</button>
+
+    <!-- 反馈模态框 -->
+    <div class="feedback-modal" id="feedbackModal" role="dialog" aria-modal="true" aria-labelledby="feedbackModalTitle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="feedbackModalTitle">问题反馈</h3>
+                <button class="modal-close" id="closeModal" aria-label="关闭反馈表单">&times;</button>
+            </div>
+            <form id="feedbackForm" novalidate>
+                <div class="form-group">
+                    <label for="feedbackType">问题类型</label>
+                    <select class="form-control" id="feedbackType" required>
+                        <option value="">请选择</option>
+                        <option value="bug">功能异常</option>
+                        <option value="suggestion">功能建议</option>
+                        <option value="device">设备连接问题</option>
+                        <option value="other">其他问题</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="feedbackContent">问题描述</label>
+                    <textarea class="form-control" id="feedbackContent" placeholder="请详细描述您遇到的问题或建议..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="feedbackContact">联系方式（选填）</label>
+                    <input type="text" class="form-control" id="feedbackContact" placeholder="邮箱或手机号">
+                </div>
+                <button type="submit" class="green" style="width:100%;margin-top:10px">提交反馈</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="printArea"></div>
+
+    <script>
+        (function() {
+            const devices = [];
+            const dataRecord = { time: [], deviceNames: [] };
+            const MAX_POINT = 100;
+            let chartRT, chartStats;
+            let isPlaying = false;
+            let playTimer = null;
+            let savedData = null;
+            let mainDeviceIndex = 0;
+
+            // 音频系统核心变量
+            let audioContext;
+            let oscillator, gainNode;
+            let heartbeatInterval;
+            let pulseInterval;
+            let isAudioInited = false;
+            let isAudioEnabled = true;
+
+            // 心率区间定义（BPM）
+            const HEART_RATE_ZONES = [
+                { name: '静息', min: 0, max: 60, color: '#2ed573' },
+                { name: '热身', min: 60, max: 100, color: '#ffa502' },
+                { name: '有氧', min: 100, max: 140, color: '#ff4757' },
+                { name: '无氧', min: 140, max: 170, color: '#a55eea' },
+                { name: '极限', min: 170, max: 220, color: '#ff3838' }
+            ];
+
+            const HEART_RATE_SERVICE = 'heart_rate';
+            const HEART_RATE_CHARACTERISTIC = 'heart_rate_measurement';
+
+            // ====================== DOM 缓存 ======================
+            const domDeviceList = document.getElementById('deviceList');
+            const domStatsContainer = document.getElementById('statsContainer');
+            const domAlarmContainer = document.getElementById('alarmContainer');
+            const domAlarmLevel = document.getElementById('alarmLevel');
+            const domAlarmDesc = document.getElementById('alarmDesc');
+            const domAlarmHr = document.getElementById('alarmHr');
+            const domMainDeviceContainer = document.getElementById('mainDeviceContainer');
+            const domMainDeviceSelect = document.getElementById('mainDeviceSelect');
+            const domReportArea = document.getElementById('reportArea');
+            const domAudioToggle = document.getElementById('audioToggle');
+            const domFeedbackModal = document.getElementById('feedbackModal');
+            const domFeedbackForm = document.getElementById('feedbackForm');
+            const domDropdownWrapper = document.getElementById('dataDropdown');
+            const domDropdownToggle = document.getElementById('dropdownToggleBtn');
+            const domDropdownMenu = document.getElementById('dropdownMenu');
+
+            // 介绍面板折叠元素
+            const introPanel = document.getElementById('introPanel');
+            const introHeader = document.getElementById('introHeader');
+            const introArrow = document.getElementById('introArrow');
+            const introContent = document.getElementById('introContent');
+
+            // ====================== 介绍面板折叠逻辑 ======================
+            function toggleIntro() {
+                const isOpen = introPanel.classList.contains('open');
+                if (isOpen) {
+                    introPanel.classList.remove('open');
+                    introHeader.setAttribute('aria-expanded', 'false');
+                } else {
+                    introPanel.classList.add('open');
+                    introHeader.setAttribute('aria-expanded', 'true');
+                }
+            }
+
+            introHeader.addEventListener('click', toggleIntro);
+
+            introHeader.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleIntro();
+                }
+            });
+
+            // 初始状态为折叠（默认没有open类）
+
+            // ====================== 下拉菜单逻辑 ======================
+            function openDropdown() {
+                domDropdownWrapper.classList.add('open');
+                domDropdownToggle.setAttribute('aria-expanded', 'true');
+            }
+
+            function closeDropdown() {
+                domDropdownWrapper.classList.remove('open');
+                domDropdownToggle.setAttribute('aria-expanded', 'false');
+            }
+
+            function toggleDropdown() {
+                if (domDropdownWrapper.classList.contains('open')) {
+                    closeDropdown();
+                } else {
+                    openDropdown();
+                }
+            }
+
+            domDropdownToggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                toggleDropdown();
+            });
+
+            // 点击菜单项时关闭下拉并执行对应操作
+            domDropdownMenu.addEventListener('click', function(e) {
+                const menuItem = e.target.closest('.dropdown-item');
+                if (!menuItem) return;
+                const action = menuItem.getAttribute('data-action');
+                if (!action) return;
+                e.stopPropagation();
+                closeDropdown();
+                handleDropdownAction(action);
+            });
+
+            // 点击页面其他区域关闭下拉
+            document.addEventListener('click', function(e) {
+                if (!domDropdownWrapper.contains(e.target)) {
+                    closeDropdown();
+                }
+            });
+
+            // ESC键关闭下拉
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && domDropdownWrapper.classList.contains('open')) {
+                    closeDropdown();
+                    domDropdownToggle.focus();
+                }
+            });
+
+            // 下拉菜单项的动作分发
+            function handleDropdownAction(action) {
+                switch (action) {
+                    case 'save':
+                        saveData();
+                        break;
+                    case 'load':
+                        loadData();
+                        break;
+                    case 'export':
+                        exportExcel();
+                        break;
+                    case 'print':
+                        printReport();
+                        break;
+                    case 'analyse':
+                        analyseData();
+                        break;
+                    case 'play':
+                        startPlayback();
+                        break;
+                    case 'pause':
+                        pausePlayback();
+                        break;
+                    case 'stopPlay':
+                        stopPlayback();
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            // ====================== 正确解析蓝牙心率数据 ======================
+            function parseHeartRate(value) {
+                const flags = value.getUint8(0);
+                const is16Bit = flags & 0x01;
+                let hr;
+                if (is16Bit) {
+                    hr = value.getUint16(1, true);
+                } else {
+                    hr = value.getUint8(1);
+                }
+                return hr > 0 && hr < 220 ? hr : null;
+            }
+
+            // ====================== 设备重复检测 ======================
+            function isDeviceAlreadyConnected(deviceId) {
+                return devices.find(dev => dev.deviceId === deviceId) || false;
+            }
+
+            // ====================== 三级智能报警音频系统 ======================
+            function initAudioContext() {
+                if (isAudioInited) return;
+                try {
+                    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+                    audioContext = new AudioContext();
+                    gainNode = audioContext.createGain();
+                    gainNode.connect(audioContext.destination);
+                    gainNode.gain.value = 0.7;
+                    isAudioInited = true;
+                } catch (e) {
+                    alert('当前浏览器不支持音频报警功能：' + e.message);
+                }
+            }
+
+            function stopAllAudio() {
+                if (oscillator) {
+                    try { oscillator.stop();
+                        oscillator.disconnect(); } catch (e) {}
+                    oscillator = null;
+                }
+                if (heartbeatInterval) { clearInterval(heartbeatInterval);
+                    heartbeatInterval = null; }
+                if (pulseInterval) { clearInterval(pulseInterval);
+                    pulseInterval = null; }
+                if (audioContext && audioContext.state !== 'suspended') {
+                    try { audioContext.suspend(); } catch (e) {}
+                }
+            }
+
+            function resumeAudioContext() {
+                if (audioContext && audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+            }
+
+            function playNormalHeartbeat(hr) {
+                if (!isAudioEnabled) return;
+                stopAllAudio();
+                resumeAudioContext();
+                if (!isAudioInited) return;
+                const beatInterval = Math.round(60000 / hr);
+                heartbeatInterval = setInterval(() => {
+                    if (!isAudioEnabled) return stopAllAudio();
+                    oscillator = audioContext.createOscillator();
+                    oscillator.type = 'sine';
+                    oscillator.frequency.value = 240;
+                    oscillator.connect(gainNode);
+                    oscillator.start();
+                    setTimeout(() => { if (oscillator) oscillator.stop(); }, 100);
+                    setTimeout(() => {
+                        if (!isAudioEnabled) return;
+                        oscillator = audioContext.createOscillator();
+                        oscillator.type = 'sine';
+                        oscillator.frequency.value = 120;
+                        oscillator.connect(gainNode);
+                        oscillator.start();
+                        setTimeout(() => { if (oscillator) oscillator.stop(); }, 80);
+                    }, 300);
+                }, beatInterval);
+            }
+
+            function playBradycardiaAlarm() {
+                if (!isAudioEnabled) return;
+                stopAllAudio();
+                resumeAudioContext();
+                if (!isAudioInited) return;
+                let isHigh = true;
+                heartbeatInterval = setInterval(() => {
+                    if (!isAudioEnabled) return stopAllAudio();
+                    oscillator = audioContext.createOscillator();
+                    oscillator.type = 'square';
+                    oscillator.frequency.value = isHigh ? 800 : 600;
+                    oscillator.connect(gainNode);
+                    oscillator.start();
+                    setTimeout(() => { if (oscillator) oscillator.stop(); }, 300);
+                    isHigh = !isHigh;
+                }, 600);
+            }
+
+            function playTachycardiaAlarm() {
+                if (!isAudioEnabled) return;
+                stopAllAudio();
+                resumeAudioContext();
+                if (!isAudioInited) return;
+                oscillator = audioContext.createOscillator();
+                oscillator.type = 'square';
+                oscillator.frequency.value = 1000;
+                oscillator.connect(gainNode);
+                oscillator.start();
+                let pulseCount = 0;
+                pulseInterval = setInterval(() => {
+                    if (!isAudioEnabled) return stopAllAudio();
+                    const pulseOsc = audioContext.createOscillator();
+                    pulseOsc.type = 'square';
+                    pulseOsc.frequency.value = 1200;
+                    pulseOsc.connect(gainNode);
+                    pulseOsc.start();
+                    setTimeout(() => { pulseOsc.stop(); }, 150);
+                    pulseCount++;
+                    if (pulseCount >= 20) {
+                        clearInterval(pulseInterval);
+                        pulseInterval = null;
+                        stopAllAudio();
+                    }
+                }, 500);
+            }
+
+            function updateAlarmStatus(hr) {
+                domAlarmContainer.className = 'alarm-container';
+                domAlarmHr.textContent = `${hr} BPM`;
+                if (hr >= 60 && hr <= 100) {
+                    domAlarmContainer.classList.add('alarm-normal');
+                    domAlarmLevel.textContent = '正常';
+                    domAlarmDesc.textContent = '心率处于安全区间';
+                    playNormalHeartbeat(hr);
+                } else if (hr < 60) {
+                    domAlarmContainer.classList.add('alarm-bradycardia');
+                    domAlarmLevel.textContent = '黄警 · 心跳过缓';
+                    domAlarmDesc.textContent = '心率低于60次/分，需关注';
+                    playBradycardiaAlarm();
+                } else if (hr > 100) {
+                    domAlarmContainer.classList.add('alarm-tachycardia');
+                    domAlarmLevel.textContent = '红警 · 心跳过速';
+                    domAlarmDesc.textContent = '心率高于100次/分，紧急关注';
+                    playTachycardiaAlarm();
+                }
+            }
+
+            // ====================== 主设备选择 ======================
+            function updateMainDeviceSelect() {
+                const src = isPlaying ? savedData : dataRecord;
+                const names = src.deviceNames || [];
+                if (names.length < 1) {
+                    domMainDeviceContainer.style.display = 'none';
+                    return;
+                }
+                domMainDeviceContainer.style.display = 'block';
+                domMainDeviceSelect.innerHTML = '';
+                names.forEach((name, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = name;
+                    if (index === mainDeviceIndex) option.selected = true;
+                    domMainDeviceSelect.appendChild(option);
+                });
+            }
+
+            domMainDeviceSelect.addEventListener('change', function() {
+                mainDeviceIndex = parseInt(this.value);
+                const src = isPlaying ? savedData : dataRecord;
+                if (src[mainDeviceIndex] && src[mainDeviceIndex].length > 0) {
+                    const lastHr = src[mainDeviceIndex][src[mainDeviceIndex].length - 1];
+                    updateAlarmStatus(lastHr);
+                }
+            });
+
+            // ====================== 设备重命名 ======================
+            function renameDevice(index) {
+                const currentName = dataRecord.deviceNames[index];
+                const newName = prompt('请输入新的设备名称：', currentName);
+                if (newName && newName.trim() !== '' && newName !== currentName) {
+                    dataRecord.deviceNames[index] = newName.trim();
+                    if (devices[index]) devices[index].name = newName.trim();
+                    if (savedData) savedData.deviceNames[index] = newName.trim();
+                    updateMainDeviceSelect();
+                    renderAll();
+                }
+            }
+
+            // 暴露到全局作用域以供onclick调用
+            window.renameDevice = renameDevice;
+
+            // ====================== 心率区间统计 ======================
+            function calculateHeartRateZones(data) {
+                const zones = HEART_RATE_ZONES.map(zone => ({ ...zone, count: 0 }));
+                data.forEach(hr => {
+                    for (let i = 0; i < zones.length; i++) {
+                        if (hr >= zones[i].min && hr < zones[i].max) {
+                            zones[i].count++;
+                            break;
+                        }
+                    }
+                });
+                return zones;
+            }
+
+            // ====================== 扫描蓝牙设备 ======================
+            async function scanDevice() {
+                initAudioContext();
+                try {
+                    const device = await navigator.bluetooth.requestDevice({
+                        filters: [{ services: [HEART_RATE_SERVICE] }]
+                    });
+                    const deviceUniqueId = device.id;
+                    const existingDevice = isDeviceAlreadyConnected(deviceUniqueId);
+                    if (existingDevice) {
+                        alert(`⚠️ 该设备已连接：${existingDevice.name}\n无需重复连接`);
+                        if (!existingDevice.device.gatt.connected) {
+                            await existingDevice.device.gatt.connect();
+                            alert(`✅ 已重新连接设备：${existingDevice.name}`);
+                            renderAll();
+                        }
+                        return;
+                    }
+                    const server = await device.gatt.connect();
+                    const service = await server.getPrimaryService(HEART_RATE_SERVICE);
+                    const char = await service.getCharacteristic(HEART_RATE_CHARACTERISTIC);
+                    const dev = {
+                        name: device.name || `设备${devices.length+1}`,
+                        deviceId: deviceUniqueId,
+                        device,
+                        server,
+                        service,
+                        char,
+                        hr: 0,
+                        id: devices.length
+                    };
+                    device.addEventListener('gattserverdisconnected', () => {
+                        alert(`⚠️ 设备 ${dev.name} 已断开连接`);
+                    });
+                    devices.push(dev);
+                    dataRecord[dev.id] = [];
+                    dataRecord.deviceNames = devices.map(d => d.name);
+                    alert(`✅ 已连接新设备：${dev.name}`);
+                    updateMainDeviceSelect();
+                    renderDeviceList();
+                    char.startNotifications().then(() => {
+                        char.addEventListener('characteristicvaluechanged', e => {
+                            const hr = parseHeartRate(e.target.value);
+                            if (hr !== null) {
+                                dev.hr = hr;
+                                onHRUpdate();
+                            }
+                        });
+                    });
+                } catch (err) {
+                    alert('连接失败：' + err.message +
+                        '\n\n请确保：\n1. 设备已开启蓝牙并处于配对模式\n2. 浏览器支持Web Bluetooth API（Chrome/Edge最佳）\n3. 设备未被其他设备连接');
+                }
+            }
+
+            document.getElementById('scan').addEventListener('click', scanDevice);
+
+            // ====================== 音频开关 ======================
+            domAudioToggle.addEventListener('click', function() {
+                isAudioEnabled = !isAudioEnabled;
+                if (isAudioEnabled) {
+                    this.textContent = '🔊 关闭音频反馈';
+                    this.className = 'green';
+                    resumeAudioContext();
+                    const src = isPlaying ? savedData : dataRecord;
+                    if (src[mainDeviceIndex] && src[mainDeviceIndex].length > 0) {
+                        const lastHr = src[mainDeviceIndex][src[mainDeviceIndex].length - 1];
+                        updateAlarmStatus(lastHr);
+                    }
+                } else {
+                    this.textContent = '🔇 开启音频反馈';
+                    this.className = 'gray';
+                    stopAllAudio();
+                }
+            });
+
+            // ====================== 心率更新 ======================
+            function onHRUpdate() {
+                if (isPlaying) return;
+                const now = new Date().toLocaleTimeString();
+                dataRecord.time.push(now);
+                devices.forEach(d => dataRecord[d.id].push(d.hr));
+                if (dataRecord.time.length > MAX_POINT) {
+                    dataRecord.time.shift();
+                    devices.forEach(d => dataRecord[d.id].shift());
+                }
+                renderAll();
+                if (devices.length > mainDeviceIndex && devices[mainDeviceIndex].hr > 0) {
+                    updateAlarmStatus(devices[mainDeviceIndex].hr);
+                }
+            }
+
+            function renderAll() {
+                renderDeviceList();
+                renderStats();
+                updateCharts();
+                updateMainDeviceSelect();
+            }
+
+            function renderDeviceList() {
+                const src = isPlaying ? savedData : dataRecord;
+                const names = src.deviceNames || [];
+                if (names.length === 0) {
+                    domDeviceList.innerHTML = '未连接设备';
+                    domDeviceList.classList.remove('realtime-hr');
+                    domAlarmContainer.className = 'alarm-container';
+                    domAlarmLevel.textContent = '未监测';
+                    domAlarmDesc.textContent = '请连接设备开始监测';
+                    domAlarmHr.textContent = '-- BPM';
+                    stopAllAudio();
+                    return;
+                }
+                const mainDeviceName = names[mainDeviceIndex];
+                let mainHr = '--';
+                if (src[mainDeviceIndex] && src[mainDeviceIndex].length > 0) {
+                    mainHr = src[mainDeviceIndex][src[mainDeviceIndex].length - 1];
+                }
+                const deviceNamesText = names.join('、');
+                domDeviceList.innerHTML =
+                    `${mainHr} BPM <span>主设备：${mainDeviceName} | 已连接：${deviceNamesText} | 数据点：${src.time.length}</span>`;
+                domDeviceList.classList.add('realtime-hr');
+            }
+
+            function renderStats() {
+                const src = isPlaying ? savedData : dataRecord;
+                const names = src.deviceNames || [];
+                if (names.length === 0) {
+                    domStatsContainer.innerHTML = '';
+                    return;
+                }
+                let html = '';
+                names.forEach((name, i) => {
+                    const arr = src[i] || [];
+                    if (arr.length < 2) {
+                        html +=
+                            `<div class="stats-card"><div class="stats-title">${name} <button class="rename-btn" onclick="renameDevice(${i})">重命名</button></div>数据不足</div>`;
+                        return;
+                    }
+                    const mean = math.mean(arr).toFixed(1);
+                    const std = math.std(arr, 'uncorrected').toFixed(1);
+                    const max = math.max(arr);
+                    const min = math.min(arr);
+                    let err = 'N/A';
+                    if (i > 0 && src[0] && src[0].length === arr.length) {
+                        const df = arr.map((v, j) => Math.abs(v - src[0][j]));
+                        err = math.mean(df).toFixed(1) + ' BPM';
+                    }
+                    html += `
+                <div class="stats-card">
+                    <div class="stats-title">${name} <button class="rename-btn" onclick="renameDevice(${i})">重命名</button></div>
+                    <div class="stats-row"><span>均值</span><span>${mean}</span></div>
+                    <div class="stats-row"><span>标准差</span><span>${std}</span></div>
+                    <div class="stats-row"><span>最大</span><span>${max}</span></div>
+                    <div class="stats-row"><span>最小</span><span>${min}</span></div>
+                    <div class="stats-row"><span>与主设备误差</span><span>${err}</span></div>
+                </div>`;
+                });
+                domStatsContainer.innerHTML = html;
+            }
+
+            function updateCharts() {
+                const src = isPlaying ? savedData : dataRecord;
+                const names = src.deviceNames || [];
+                if (names.length === 0) {
+                    if (chartRT) { chartRT.destroy();
+                        chartRT = null; }
+                    if (chartStats) { chartStats.destroy();
+                        chartStats = null; }
+                    return;
+                }
+                // 实时心率曲线
+                const ctx1 = document.getElementById('chartRealTime').getContext('2d');
+                const ds = names.map((name, i) => {
+                    const colors = ['#ff4757', '#2ed573', '#00d4ff', '#ffa502', '#a55eea'];
+                    const color = colors[i % colors.length];
+                    return {
+                        label: name,
+                        data: src[i] || [],
+                        borderColor: color,
+                        borderWidth: 2,
+                        tension: 0.3,
+                        pointRadius: 0,
+                        fill: false
+                    };
+                });
+                if (chartRT) chartRT.destroy();
+                chartRT = new Chart(ctx1, {
+                    type: 'line',
+                    data: { labels: src.time || [], datasets: ds },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: false,
+                        plugins: { legend: { labels: { color: '#fff' } } },
+                        scales: {
+                            x: {
+                                ticks: { color: 'rgba(255,255,255,0.7)', maxTicksLimit: 10 },
+                                grid: { color: 'rgba(255,255,255,0.1)' }
+                            },
+                            y: {
+                                ticks: { color: 'rgba(255,255,255,0.7)' },
+                                grid: { color: 'rgba(255,255,255,0.1)' },
+                                min: Math.max(40, (src[0] && src[0].length > 0 ? math.min(src[0]) : 60) -
+                                    10),
+                                max: Math.min(200, (src[0] && src[0].length > 0 ? math.max(src[0]) : 100) +
+                                    10)
+                            }
+                        }
+                    }
+                });
+                // 心率区间分布
+                const ctx2 = document.getElementById('chartHeartRateStats').getContext('2d');
+                const mainData = src[mainDeviceIndex] || [];
+                const zones = calculateHeartRateZones(mainData);
+                const zoneLabels = zones.map(z => z.name);
+                const zoneData = zones.map(z => z.count);
+                const zoneColors = zones.map(z => z.color);
+                if (chartStats) chartStats.destroy();
+                chartStats = new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: {
+                        labels: zoneLabels,
+                        datasets: [{
+                            data: zoneData,
+                            backgroundColor: zoneColors,
+                            borderWidth: 0,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: '#fff', padding: 20 } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b,
+                                            0);
+                                        const percentage = ((context.raw / total) * 100).toFixed(1);
+                                        return `${context.label}: ${context.raw} 次 (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // ====================== 数据分析 ======================
+            function analyseData() {
+                const src = isPlaying ? savedData : dataRecord;
+                const names = src.deviceNames || [];
+                if (names.length === 0 || !src[mainDeviceIndex] || src[mainDeviceIndex].length < 5) {
+                    alert('数据不足，无法生成分析报告（至少需要5个数据点）');
+                    return;
+                }
+                const data = src[mainDeviceIndex];
+                const restingHR = math.round(math.mean(data));
+                const sorted = [...data].sort((a, b) => a - b);
+                const low = sorted.slice(0, Math.max(5, Math.round(sorted.length * 0.2)));
+                const realResting = math.round(math.mean(low));
+                let hrv = 0;
+                if (data.length >= 10) {
+                    const diffs = [];
+                    for (let i = 1; i < data.length; i++) diffs.push(Math.abs(data[i] - data[i - 1]));
+                    hrv = math.round(math.mean(diffs));
+                }
+                let level = '';
+                let advice = '';
+                if (realResting < 50) {
+                    level = '优秀（运动员水平）';
+                    advice = '心脏泵血效率极高，心血管状态极佳';
+                } else if (realResting <= 60) {
+                    level = '良好';
+                    advice = '心率理想，心脏功能健康';
+                } else if (realResting <= 80) {
+                    level = '正常';
+                    advice = '处于健康理想区间';
+                } else if (realResting <= 100) {
+                    level = '偏快';
+                    advice = '建议注意休息、减少熬夜、咖啡与压力';
+                } else {
+                    level = '偏快（需关注）';
+                    advice = '持续偏高可能增加心脏负担，建议改善作息或咨询医生';
+                }
+                let hrvText = '';
+                if (hrv < 10) hrvText = '偏低 → 压力大/疲劳';
+                else if (hrv <= 25) hrvText = '正常 → 自主神经平衡';
+                else hrvText = '良好 → 适应力强、心血管健康';
+                const zones = calculateHeartRateZones(data);
+                let zoneHtml = '';
+                zones.forEach(zone => {
+                    const percentage = ((zone.count / data.length) * 100).toFixed(1);
+                    zoneHtml +=
+                        `<div class="zone" style="border-left: 3px solid ${zone.color}">
+                    <strong>${zone.name} (${zone.min}-${zone.max} BPM)</strong>：${zone.count} 次，占比 ${percentage}%
+                </div>`;
+                });
+                domReportArea.innerHTML = `
+                <div class="report">
+                    <h3>📊 心率分析报告</h3>
+                    <div class="item"><strong>分析基准：</strong>${names[mainDeviceIndex]}（主设备）</div>
+                    <div class="item"><strong>对比设备：</strong>${names.join('、')}</div>
+                    <div class="item"><strong>有效数据点：</strong>${data.length} 个</div>
+                    <div class="item"><strong>整体平均心率：</strong>${restingHR} 次/分钟</div>
+                    <div class="item"><strong>🔹 估算静息心率：</strong><span style="color:#ff4757;font-size:18px">${realResting}</span> 次/分钟</div>
+                    <div class="item"><strong>🔹 心率变异性（HRV）：</strong>${hrv} —— ${hrvText}</div>
+                    <div class="item"><strong>🔹 健康评级：</strong>${level}</div>
+                    <div class="item"><strong>💡 健康建议：</strong>${advice}</div>
+                    <h4 style="margin-top: 20px; color: #00d4ff;">📈 心率区间分布</h4>
+                    ${zoneHtml}
+                    <button onclick="window.exportReportText()" style="margin-top:16px;background:rgba(40,167,69,0.2);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:10px 16px;border-radius:10px;cursor:pointer;">导出报告</button>
+                </div>
+            `;
+                // 滚动到报告区域
+                domReportArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            window.exportReportText = function() {
+                const text = domReportArea.innerText;
+                const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = '心率分析报告_' + new Date().toLocaleString().replace(/[: ]/g, '-') + '.txt';
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            // ====================== 导出Excel ======================
+            function exportExcel() {
+                const src = isPlaying ? savedData : dataRecord;
+                const headers = ['时间', ...(src.deviceNames || [])];
+                const rows = [headers];
+                const times = src.time || [];
+                for (let i = 0; i < times.length; i++) {
+                    const row = [times[i]];
+                    src.deviceNames.forEach((_, j) => row.push(src[j]?.[i] || ''));
+                    rows.push(row);
+                }
+                const ws = XLSX.utils.aoa_to_sheet(rows);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, '心率数据');
+                XLSX.writeFile(wb, '心率对比数据_' + new Date().toLocaleString().replace(/[:/ ]/g, '-') + '.xlsx');
+            }
+
+            // ====================== 清空数据 ======================
+            document.getElementById('clear').addEventListener('click', function() {
+                if (isPlaying) return;
+                dataRecord.time = [];
+                devices.forEach((d, i) => dataRecord[i] = []);
+                domReportArea.innerHTML = '';
+                domAlarmContainer.className = 'alarm-container';
+                domAlarmLevel.textContent = '未监测';
+                domAlarmDesc.textContent = '请连接设备开始监测';
+                domAlarmHr.textContent = '-- BPM';
+                stopAllAudio();
+                renderAll();
+            });
+
+            // ====================== 断开设备 ======================
+            document.getElementById('disconnect').addEventListener('click', function() {
+                devices.forEach(d => {
+                    if (d.device.gatt.connected) {
+                        d.device.gatt.disconnect();
+                    }
+                });
+                devices.length = 0;
+                dataRecord.time = [];
+                dataRecord.deviceNames = [];
+                mainDeviceIndex = 0;
+                domReportArea.innerHTML = '';
+                domMainDeviceContainer.style.display = 'none';
+                domAlarmContainer.className = 'alarm-container';
+                domAlarmLevel.textContent = '未监测';
+                domAlarmDesc.textContent = '请连接设备开始监测';
+                domAlarmHr.textContent = '-- BPM';
+                stopAllAudio();
+                renderAll();
+            });
+
+            // ====================== 保存数据 ======================
+            function saveData() {
+                const data = JSON.parse(JSON.stringify(dataRecord));
+                const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = '心率数据_' + new Date().toLocaleString().replace(/[:/ ]/g, '-') + '.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+            // ====================== 加载回放数据 ======================
+            function loadData() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                input.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const fr = new FileReader();
+                    fr.onload = function(ev) {
+                        savedData = JSON.parse(ev.target.result);
+                        mainDeviceIndex = 0;
+                        isPlaying = false;
+                        loadPlayData(savedData.time.length - 1);
+                        updateMainDeviceSelect();
+                        alert('加载成功，请在"数据操作 → 回放控制"中点击"开始回放"');
+                    };
+                    fr.readAsText(file);
+                });
+                input.click();
+            }
+
+            function loadPlayData(index) {
+                if (!savedData) return;
+                const t = savedData.time.slice(0, index + 1);
+                const out = { time: t, deviceNames: savedData.deviceNames };
+                savedData.deviceNames.forEach((_, i) => out[i] = savedData[i].slice(0, index + 1));
+                dataRecord.time = out.time;
+                dataRecord.deviceNames = out.deviceNames;
+                savedData.deviceNames.forEach((name, i) => {
+                    dataRecord[i] = out[i] || [];
+                });
+                renderAll();
+                if (savedData[mainDeviceIndex] && savedData[mainDeviceIndex].length > 0) {
+                    const lastHr = savedData[mainDeviceIndex][Math.min(index, savedData[mainDeviceIndex].length -
+                        1)];
+                    updateAlarmStatus(lastHr);
+                }
+            }
+
+            // ====================== 回放控制 ======================
+            function startPlayback() {
+                if (!savedData) {
+                    alert('请先加载历史数据文件（数据操作 → 加载回放）');
+                    return;
+                }
+                isPlaying = true;
+                let i = 0;
+                clearInterval(playTimer);
+                playTimer = setInterval(() => {
+                    if (i >= savedData.time.length) {
+                        clearInterval(playTimer);
+                        isPlaying = false;
+                        alert('回放完成');
+                        return;
+                    }
+                    loadPlayData(i++);
+                }, 300);
+            }
+
+            function pausePlayback() {
+                clearInterval(playTimer);
+            }
+
+            function stopPlayback() {
+                clearInterval(playTimer);
+                isPlaying = false;
+                if (savedData) {
+                    loadPlayData(savedData.time.length - 1);
+                }
+            }
+
+            // ====================== 打印报表 ======================
+            function printReport() {
+                const printArea = document.getElementById('printArea');
+                const reportContent = domReportArea.innerText;
+                const src = isPlaying ? savedData : dataRecord;
+                const names = src.deviceNames || [];
+                if (reportContent.trim()) {
+                    printArea.innerHTML =
+                        `<h1 style="text-align:center;color:#000;">心率分析报告</h1><pre style="line-height:1.6;color:#000;">${reportContent}</pre>`;
+                } else {
+                    let html = `<h1 style="text-align:center;color:#000;">心率设备对比分析报表</h1>`;
+                    html += `<p style="color:#000;">记录时间：${new Date().toLocaleString()}</p>`;
+                    html += `<p style="color:#000;">主设备：${names[mainDeviceIndex] || '无'}</p>`;
+                    html +=
+                        `<table border="1" width="100%" style="border-collapse:collapse;margin-top:20px;color:#000;">`;
+                    html += `<tr><th>指标</th>`;
+                    names.forEach(n => html += `<th>${n}</th>`);
+                    html += `</tr>`;
+                    const items = ['均值', '标准差', '最大值', '最小值', '与主设备误差'];
+                    items.forEach(item => {
+                        html += `<tr><td>${item}</td>`;
+                        names.forEach((_, i) => {
+                            const arr = src[i] || [];
+                            let val = 'N/A';
+                            if (arr.length > 1) {
+                                if (item == '均值') val = math.mean(arr).toFixed(1);
+                                if (item == '标准差') val = math.std(arr, 'uncorrected').toFixed(
+                                    1);
+                                if (item == '最大值') val = math.max(arr);
+                                if (item == '最小值') val = math.min(arr);
+                                if (item == '与主设备误差' && i !== mainDeviceIndex && src[
+                                        mainDeviceIndex]) {
+                                    const df = arr.map((v, j) => Math.abs(v - src[mainDeviceIndex][
+                                        j
+                                    ]));
+                                    val = math.mean(df).toFixed(1) + ' BPM';
+                                }
+                            }
+                            html += `<td>${val}</td>`;
+                        });
+                        html += `</tr>`;
+                    });
+                    html += `</table>`;
+                    printArea.innerHTML = html;
+                }
+                setTimeout(() => window.print(), 500);
+            }
+
+            // ====================== 反馈功能 ======================
+            const feedbackBtn = document.getElementById('feedbackBtn');
+            const closeModalBtn = document.getElementById('closeModal');
+
+            feedbackBtn.addEventListener('click', function() {
+                domFeedbackModal.classList.add('active');
+            });
+
+            closeModalBtn.addEventListener('click', function() {
+                domFeedbackModal.classList.remove('active');
+            });
+
+            domFeedbackModal.addEventListener('click', function(e) {
+                if (e.target === domFeedbackModal) {
+                    domFeedbackModal.classList.remove('active');
+                }
+            });
+
+            domFeedbackForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const type = document.getElementById('feedbackType').value;
+                const content = document.getElementById('feedbackContent').value;
+                const contact = document.getElementById('feedbackContact').value;
+                const feedback = {
+                    type,
+                    content,
+                    contact,
+                    time: new Date().toLocaleString()
+                };
+                const feedbacks = JSON.parse(localStorage.getItem('heartRateFeedbacks') || '[]');
+                feedbacks.push(feedback);
+                localStorage.setItem('heartRateFeedbacks', JSON.stringify(feedbacks));
+                alert('✅ 反馈提交成功！感谢您的宝贵意见');
+                domFeedbackModal.classList.remove('active');
+                domFeedbackForm.reset();
+            });
+
+            // ====================== 页面卸载清理 ======================
+            window.addEventListener('beforeunload', () => {
+                stopAllAudio();
+                devices.forEach(d => {
+                    if (d.device.gatt.connected) {
+                        d.device.gatt.disconnect();
+                    }
+                });
+            });
+
+            // ====================== 初始渲染 ======================
+            renderAll();
+        })();
+    </script>
+</body>
+</html>
