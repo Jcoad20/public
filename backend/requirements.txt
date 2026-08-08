@@ -1,0 +1,17 @@
+# requirements.txt
+# This file lists all Python dependencies required for the backend of the project.
+# Install these packages using pip to ensure the backend runs correctly.
+
+fastapi              # Web framework for building APIs
+uvicorn[standard]    # ASGI server for running FastAPI applications
+pydantic             # Data validation and settings management using Python type annotations
+kubernetes           # Python client for interacting with Kubernetes clusters
+google-generativeai  # Integrates Google Generative AI for AI-powered features
+python-multipart     # Handles multipart/form-data (file uploads) in FastAPI
+
+# ------------------------------------------------------------------------------
+# 新增依赖 (AI接入功能)
+# ------------------------------------------------------------------------------
+apscheduler          # 后台定时任务调度器，用于定时扫描 K8s Pod 异常状态
+aiohttp              # 异步 HTTP 客户端库，用于发送告警 Webhook 推送
+requests             # 同步 HTTP 客户端（备用），用于发送告警请求
