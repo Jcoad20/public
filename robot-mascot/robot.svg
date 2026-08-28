@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 900 900" width="900" height="900" fill="none">
+  <style>
+    #robot{animation:float 4.6s ease-in-out infinite}
+    #head{transform-box:fill-box;transform-origin:50% 96%;animation:shake 6.4s ease-in-out infinite}
+    #halo{transform-box:fill-box;transform-origin:center;animation:haloTilt 9s ease-in-out infinite}
+    .ear-dash{transform-box:fill-box;transform-origin:center;animation:spin 22s linear infinite}
+    .ear-wob{transform-box:fill-box;transform-origin:center;animation:wig 5.5s ease-in-out infinite}
+    .eye{animation:breathe 3.4s ease-in-out infinite}
+    .rim{animation:breathe 3.4s ease-in-out infinite}
+    .core{animation:breathe 3.4s ease-in-out infinite .5s}
+    .ground{transform-box:fill-box;transform-origin:center;animation:groundPulse 4.6s ease-in-out infinite}
+    .particle{animation:drift var(--d,7s) ease-in-out infinite,twinkle var(--t,3s) ease-in-out infinite}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
+    @keyframes shake{0%,100%{transform:rotate(0deg)}30%{transform:rotate(2.6deg)}70%{transform:rotate(-2.6deg)}}
+    @keyframes haloTilt{0%,100%{transform:rotate(-2.2deg)}50%{transform:rotate(2.2deg)}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes wig{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+    @keyframes breathe{0%,100%{opacity:.5}50%{opacity:1}}
+    @keyframes groundPulse{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(.88);opacity:.3}}
+    @keyframes drift{0%,100%{transform:translate(0,0)}50%{transform:translate(var(--dx,6px),var(--dy,-16px))}}
+    @keyframes twinkle{0%,100%{opacity:.12}50%{opacity:.95}}
+    @media (prefers-reduced-motion:reduce){#robot,#head,#halo,.ear-dash,.ear-wob,.eye,.rim,.core,.ground,.particle{animation:none}}
+  </style>
+  <defs>
+    <linearGradient id="helmetGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset=".45" stop-color="#dfe9ee"/>
+      <stop offset=".8" stop-color="#aebfca"/>
+      <stop offset="1" stop-color="#8fa5b1"/>
+    </linearGradient>
+    <radialGradient id="helmetShade" cx=".5" cy=".45" r=".72">
+      <stop offset=".6" stop-color="#3c5563" stop-opacity="0"/>
+      <stop offset="1" stop-color="#3c5563" stop-opacity=".45"/>
+    </radialGradient>
+    <radialGradient id="faceGrad" cx=".5" cy=".42" r=".8">
+      <stop offset="0" stop-color="#233640"/>
+      <stop offset=".7" stop-color="#101c22"/>
+      <stop offset="1" stop-color="#0a1216"/>
+    </radialGradient>
+    <radialGradient id="groundGrad" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#67e8f9" stop-opacity=".5"/>
+      <stop offset=".6" stop-color="#22d3ee" stop-opacity=".18"/>
+      <stop offset="1" stop-color="#22d3ee" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#12303a"/>
+      <stop offset="1" stop-color="#0b1a21"/>
+    </linearGradient>
+    <filter id="glow" x="-120%" y="-120%" width="340%" height="340%">
+      <feGaussianBlur stdDeviation="5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="blur10" x="-150%" y="-150%" width="400%" height="400%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+  </defs>
+
+  <ellipse class="ground" cx="450" cy="812" rx="180" ry="30" fill="url(#groundGrad)"/>
+
+  <g id="halo">
+    <g transform="rotate(-8 450 470)">
+      <path id="orbitPath" d="M110 470a340 95 0 1 0 680 0a340 95 0 1 0 -680 0" stroke="#67e8f9" stroke-opacity=".28" stroke-width="1.6"/>
+      <ellipse cx="450" cy="470" rx="298" ry="78" stroke="#67e8f9" stroke-opacity=".14" stroke-width="1.2"/>
+      <circle cx="770" cy="502" r="3" fill="#a5f3fc" opacity=".8"/>
+      <circle cx="130" cy="438" r="2.5" fill="#a5f3fc" opacity=".6"/>
+      <circle cx="711" cy="409" r="2" fill="#e0fbff" opacity=".7"/>
+      <circle cx="189" cy="531" r="2.5" fill="#8be9f8" opacity=".6"/>
+      <circle r="4" fill="#c9f6ff" filter="url(#glow)">
+        <animateMotion dur="16s" repeatCount="indefinite"><mpath href="#orbitPath"/></animateMotion>
+      </circle>
+      <circle r="2.5" fill="#8be9f8" opacity=".8">
+        <animateMotion dur="26s" begin="-9s" repeatCount="indefinite"><mpath href="#orbitPath"/></animateMotion>
+      </circle>
+    </g>
+  </g>
+
+  <g id="robot">
+    <g id="body">
+      <path d="M382 556 C350 566 334 592 330 616" stroke="#67e8f9" stroke-opacity=".25" stroke-width="30" stroke-linecap="round"/>
+      <path d="M382 556 C350 566 334 592 330 616" stroke="#7fe7f2" stroke-opacity=".5" stroke-width="2"/>
+      <path d="M322 626 q-10 12 -2 22 M333 630 q-6 14 2 22 M344 632 q-2 14 8 20" stroke="#7fe7f2" stroke-width="3" stroke-linecap="round" opacity=".8"/>
+      <path d="M518 556 C550 566 566 592 570 616" stroke="#67e8f9" stroke-opacity=".25" stroke-width="30" stroke-linecap="round"/>
+      <path d="M518 556 C550 566 566 592 570 616" stroke="#7fe7f2" stroke-opacity=".5" stroke-width="2"/>
+      <path d="M578 626 q10 12 2 22 M567 630 q6 14 -2 22 M556 632 q2 14 -8 20" stroke="#7fe7f2" stroke-width="3" stroke-linecap="round" opacity=".8"/>
+      <path d="M424 650 C418 678 412 698 406 716" stroke="#67e8f9" stroke-opacity=".22" stroke-width="38" stroke-linecap="round"/>
+      <path d="M476 650 C482 678 488 698 494 716" stroke="#67e8f9" stroke-opacity=".22" stroke-width="38" stroke-linecap="round"/>
+      <ellipse cx="402" cy="728" rx="34" ry="27" fill="url(#bodyGrad)" stroke="#7fe7f2" stroke-opacity=".85" stroke-width="2.5"/>
+      <ellipse cx="498" cy="728" rx="34" ry="27" fill="url(#bodyGrad)" stroke="#7fe7f2" stroke-opacity=".85" stroke-width="2.5"/>
+      <path d="M376 724 q26 16 52 0 M472 724 q26 16 52 0" stroke="#67e8f9" stroke-opacity=".35" stroke-width="1.5"/>
+      <rect x="378" y="540" width="144" height="112" rx="42" fill="url(#bodyGrad)" stroke="#7fe7f2" stroke-width="2.5" stroke-opacity=".9"/>
+      <path d="M392 566 q58 -18 116 0 M392 622 q58 18 116 0" stroke="#67e8f9" stroke-opacity=".3" stroke-width="1.5"/>
+      <circle cx="382" cy="556" r="7" stroke="#8ff0fa" stroke-width="2" opacity=".8"/>
+      <circle cx="518" cy="556" r="7" stroke="#8ff0fa" stroke-width="2" opacity=".8"/>
+      <circle cx="450" cy="594" r="21" stroke="#8ff0fa" stroke-width="3" filter="url(#glow)"/>
+      <circle class="core" cx="450" cy="594" r="9" fill="#bff6ff"/>
+    </g>
+    <rect x="436" y="516" width="28" height="30" rx="8" fill="#0c161b" stroke="#67e8f9" stroke-opacity=".6" stroke-width="2"/>
+    <g id="head">
+      <g class="ear-wob">
+        <circle cx="238" cy="352" r="46" fill="#0e1a20" stroke="#67e8f9" stroke-opacity=".7" stroke-width="2"/>
+        <circle cx="238" cy="352" r="26" stroke="#67e8f9" stroke-opacity=".5" stroke-width="2"/>
+      </g>
+      <g>
+        <circle cx="668" cy="352" r="58" fill="#101c23" stroke="#8beef7" stroke-width="2.5"/>
+        <circle class="ear-dash" cx="668" cy="352" r="47" stroke="#67e8f9" stroke-opacity=".55" stroke-width="2" stroke-dasharray="5 11"/>
+        <circle cx="668" cy="352" r="34" stroke="#7fe7f2" stroke-width="3" filter="url(#glow)"/>
+        <circle cx="668" cy="352" r="15" fill="#0a1317" stroke="#99f6ff" stroke-width="2"/>
+      </g>
+      <ellipse cx="450" cy="330" rx="215" ry="200" fill="url(#helmetGrad)"/>
+      <ellipse cx="450" cy="330" rx="215" ry="200" fill="url(#helmetShade)"/>
+      <ellipse cx="450" cy="330" rx="215" ry="200" stroke="#f0fbfd" stroke-opacity=".8" stroke-width="2"/>
+      <ellipse cx="368" cy="206" rx="96" ry="44" fill="#ffffff" opacity=".5" transform="rotate(-18 368 206)"/>
+      <path d="M292 452 q158 96 316 0" stroke="#7fe7f2" stroke-opacity=".45" stroke-width="3" stroke-linecap="round"/>
+      <rect class="rim" x="300" y="230" width="300" height="240" rx="92" stroke="#22d3ee" stroke-width="10" filter="url(#blur10)"/>
+      <rect x="300" y="230" width="300" height="240" rx="92" fill="url(#faceGrad)"/>
+      <rect x="300" y="230" width="300" height="240" rx="92" stroke="#7fe7f2" stroke-width="4" filter="url(#glow)"/>
+      <g opacity=".9">
+        <ellipse cx="450" cy="272" rx="24" ry="7" stroke="#67e8f9" stroke-opacity=".7" stroke-width="2"/>
+        <rect x="444" y="252" width="12" height="16" rx="5" fill="#cfeff5"/>
+        <ellipse cx="450" cy="432" rx="24" ry="7" stroke="#67e8f9" stroke-opacity=".7" stroke-width="2"/>
+        <rect x="444" y="414" width="12" height="16" rx="5" fill="#cfeff5"/>
+      </g>
+      <g class="eye">
+        <ellipse cx="352" cy="356" rx="20" ry="27" fill="#67e8f9" filter="url(#blur10)"/>
+        <ellipse cx="352" cy="356" rx="16" ry="23" fill="#e8fdff"/>
+        <circle cx="523" cy="360" r="26" fill="#67e8f9" filter="url(#blur10)"/>
+        <circle cx="523" cy="360" r="20" fill="#e8fdff"/>
+      </g>
+      <path d="M470 322 C462 310 436 306 422 316 C406 327 406 346 422 354 C434 360 452 360 464 368 C480 378 478 398 460 406 C444 413 420 410 410 398" stroke="#d7f7fb" stroke-width="9" stroke-linecap="round" filter="url(#glow)"/>
+      <circle cx="523" cy="360" r="38" stroke="#d7f7fb" stroke-width="9" filter="url(#glow)"/>
+    </g>
+  </g>
+
+  <g fill="#9beef7">
+    <circle class="particle" cx="140" cy="240" r="3" style="--d:8s;--t:3.2s;--dx:10px;--dy:-22px;animation-delay:-2s,-1s"/>
+    <circle class="particle" cx="210" cy="150" r="2.5" style="--d:7s;--t:2.6s;--dx:-8px;--dy:-18px;animation-delay:-4s,-.6s"/>
+    <circle class="particle" cx="760" cy="210" r="3.5" style="--d:9s;--t:3.8s;--dx:12px;--dy:-26px;animation-delay:-1s,-2s"/>
+    <circle class="particle" cx="820" cy="420" r="2.5" style="--d:6.5s;--t:2.4s;--dx:-10px;--dy:-14px;animation-delay:-3s,-1.4s"/>
+    <circle class="particle" cx="700" cy="120" r="2" style="--d:7.5s;--t:3s;--dx:8px;--dy:-20px;animation-delay:-5s,-.2s"/>
+    <circle class="particle" cx="120" cy="520" r="2.5" style="--d:8.5s;--t:2.8s;--dx:10px;--dy:-16px;animation-delay:-2.6s,-1.8s"/>
+    <circle class="particle" cx="90" cy="380" r="2" style="--d:7s;--t:3.4s;--dx:-6px;--dy:-24px;animation-delay:-.8s,-2.4s"/>
+    <circle class="particle" cx="830" cy="600" r="3" style="--d:9.5s;--t:2.2s;--dx:-12px;--dy:-18px;animation-delay:-4.4s,-.9s"/>
+    <circle class="particle" cx="740" cy="700" r="2.5" style="--d:8s;--t:3.6s;--dx:8px;--dy:-22px;animation-delay:-1.6s,-2.8s"/>
+    <circle class="particle" cx="180" cy="700" r="3" style="--d:7.5s;--t:2.5s;--dx:-10px;--dy:-16px;animation-delay:-3.4s,-.4s"/>
+    <circle class="particle" cx="300" cy="110" r="2" style="--d:6.8s;--t:3.1s;--dx:6px;--dy:-18px;animation-delay:-2.2s,-1.2s"/>
+    <circle class="particle" cx="560" cy="90" r="2.5" style="--d:8.2s;--t:2.7s;--dx:-8px;--dy:-20px;animation-delay:-5.6s,-1.6s"/>
+    <circle class="particle" cx="660" cy="260" r="2" style="--d:7.2s;--t:3.3s;--dx:10px;--dy:-14px;animation-delay:-.4s,-2.2s"/>
+    <circle class="particle" cx="250" cy="300" r="2" style="--d:6.6s;--t:2.9s;--dx:-6px;--dy:-18px;animation-delay:-4.8s,-.8s"/>
+    <circle class="particle" cx="620" cy="640" r="2" style="--d:8.8s;--t:2.3s;--dx:8px;--dy:-16px;animation-delay:-2.8s,-1.9s"/>
+    <circle class="particle" cx="330" cy="760" r="2.5" style="--d:7.8s;--t:3.5s;--dx:-10px;--dy:-20px;animation-delay:-1.2s,-2.6s"/>
+  </g>
+</svg>

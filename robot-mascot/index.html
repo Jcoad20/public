@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>机器人吉祥物 · 动画预览</title>
+<style>
+  *{margin:0;box-sizing:border-box}
+  body{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:28px;
+    background:radial-gradient(1200px 800px at 50% 38%, #1b2126 0%, #14181c 55%, #0e1114 100%);
+    font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    color:#8fa3ad;
+    padding:40px 16px;
+  }
+  .main{width:min(80vmin,640px);display:block}
+  .hint{font-size:13px;letter-spacing:.08em;text-align:center;line-height:1.9}
+  .hint b{color:#7fe7f2;font-weight:600}
+  .sizes{display:flex;align-items:flex-end;gap:36px}
+  .sizes figure{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .sizes img{display:block}
+  .sizes figcaption{font-size:12px;opacity:.7}
+</style>
+</head>
+<body>
+  <img class="main" src="robot.svg" alt="机器人吉祥物动画"/>
+  <p class="hint">
+    SVG + CSS 独立动画版 · 后期可直接内联或 <b>&lt;img&gt;</b> 引入<br/>
+    <b>左右摇头</b> / <b>眼睛呼吸发光</b> / <b>身体悬浮</b> / <b>耳朵·光环旋转</b> / <b>粒子漂浮闪烁</b>
+  </p>
+  <div class="sizes">
+    <figure><img src="robot.svg" width="200" height="200" alt=""/><figcaption>200px</figcaption></figure>
+    <figure><img src="robot.svg" width="120" height="120" alt=""/><figcaption>120px</figcaption></figure>
+    <figure><img src="robot.svg" width="72" height="72" alt=""/><figcaption>72px</figcaption></figure>
+  </div>
+</body>
+</html>
